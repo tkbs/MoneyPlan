@@ -10,6 +10,12 @@ struct SettingsView: View {
         ]
     ) private var settings: [AppSetting]
     @State private var viewModel = SettingsViewModel()
+    @FocusState private var focusedField: Field?
+
+    private enum Field: Hashable {
+        case initialBalance
+        case warningBalanceThreshold
+    }
 
     var body: some View {
         NavigationStack {
@@ -31,6 +37,7 @@ struct SettingsView: View {
                 Section {
                     TextField("初期残高", text: $viewModel.initialBalanceText)
                         .keyboardType(.numbersAndPunctuation)
+                        .focused($focusedField, equals: .initialBalance)
                     if let error = viewModel.fieldErrors[.initialBalance] {
                         Text(error)
                             .font(.caption)
@@ -39,6 +46,7 @@ struct SettingsView: View {
 
                     TextField("警告閾値", text: $viewModel.warningBalanceThresholdText)
                         .keyboardType(.numberPad)
+                        .focused($focusedField, equals: .warningBalanceThreshold)
                     if let error = viewModel.fieldErrors[.warningBalanceThreshold] {
                         Text(error)
                             .font(.caption)
@@ -55,6 +63,12 @@ struct SettingsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("保存") {
                         save()
+                    }
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完了") {
+                        dismissKeyboard()
                     }
                 }
             }
@@ -85,10 +99,16 @@ struct SettingsView: View {
 
     /// 入力内容を保存する。
     private func save() {
+        dismissKeyboard()
         do {
             try viewModel.save(using: modelContext)
         } catch {
         }
+    }
+
+    /// フォーカスを外してキーボードを閉じる。
+    private func dismissKeyboard() {
+        focusedField = nil
     }
 }
 

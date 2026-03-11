@@ -109,9 +109,7 @@ final class MoneyPlanUITests: XCTestCase {
         let app = launchApp(scenario: .empty)
 
         openDashboard(in: app)
-        let currentBalance = app.staticTexts["dashboard-current-balance-value"]
-        XCTAssertTrue(currentBalance.waitForExistence(timeout: 2))
-        XCTAssertTrue(waitForLabel("¥100,000", on: currentBalance, timeout: 2))
+        XCTAssertTrue(waitForDashboardBalance("¥100,000", in: app, timeout: 2))
 
         openSettings(in: app)
 
@@ -120,8 +118,9 @@ final class MoneyPlanUITests: XCTestCase {
         replaceText(in: initialBalanceField, with: "120000")
         app.buttons["保存"].tap()
 
-        dismissKeyboardIfVisible(in: app)
-        XCTAssertTrue(waitForLabel("¥120,000", on: currentBalance, timeout: 5))
+        tapButtonIfVisible(app.buttons["完了"])
+        openDashboard(in: app)
+        XCTAssertTrue(waitForDashboardBalance("¥120,000", in: app, timeout: 5))
     }
 
     @MainActor
@@ -173,14 +172,13 @@ final class MoneyPlanUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["dashboard-current-balance-value"].waitForExistence(timeout: 5))
     }
 
-    /// 表示中のキーボードがあれば画面上部タップで閉じる。
+    /// 指定ボタンが表示中ならタップする。
     @MainActor
-    private func dismissKeyboardIfVisible(in app: XCUIApplication) {
-        guard app.keyboards.element.exists else {
+    private func tapButtonIfVisible(_ button: XCUIElement) {
+        guard button.exists else {
             return
         }
-
-        app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)).tap()
+        button.tap()
     }
 
     /// 既存文字列を消してから新しい文字列へ置き換える。
@@ -218,5 +216,11 @@ final class MoneyPlanUITests: XCTestCase {
         let predicate = NSPredicate(format: "label == %@", label)
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    /// ホームの現在残高表示が期待値へ更新されるまで待機する。
+    @MainActor
+    private func waitForDashboardBalance(_ label: String, in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        waitForLabel(label, on: app.staticTexts["dashboard-current-balance-value"], timeout: timeout)
     }
 }
