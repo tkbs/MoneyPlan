@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct PlanListView: View {
+    @Environment(AppNavigationState.self) private var navigationState
     @Environment(\.modelContext) private var modelContext
     @Query(
         sort: [
@@ -23,102 +24,8 @@ struct PlanListView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.sections) { section in
-                    Section {
-                        ForEach(section.rows) { row in
-                            Button {
-                                if let plan = plans.first(where: { $0.id == row.planID }) {
-                                    viewModel.presentEdit(for: plan)
-                                }
-                            } label: {
-                                PlanListRowView(row: row)
-                            }
-                            .buttonStyle(.plain)
-                            .swipeActions {
-                                Button("削除", role: .destructive) {
-                                    if let plan = plans.first(where: { $0.id == row.planID }) {
-                                        viewModel.deletingPlan = plan
-                                    }
-                                }
-                            }
-                        }
-                    } header: {
-                        PlanListSectionHeaderView(section: section)
-                    }
-                }
-
-                if viewModel.sections.isEmpty {
-                    ContentUnavailableView(
-                        "予定がありません",
-                        systemImage: "list.bullet.rectangle",
-                        description: Text("対象月に表示できる予定がありません。")
-                    )
-                }
-            }
-            .navigationTitle("予定")
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    MonthSwitcherView(
-                        targetMonth: viewModel.targetMonth,
-                        onPrevious: viewModel.showPreviousMonth,
-                        onNext: viewModel.showNextMonth
-                    )
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        isShowingMonthlySummary = true
-                    } label: {
-                        Image(systemName: "calendar")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.presentCreate()
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
-            .searchable(text: $viewModel.searchText, prompt: "名称で検索")
-            .sheet(isPresented: $viewModel.isShowingEditor) {
-                PlanEditorView(
-                    plan: viewModel.editingPlan,
-                    recurringPlans: recurringPlans
-                )
-            }
-            .sheet(isPresented: $isShowingMonthlySummary) {
-                MonthlySummaryView(initialMonth: viewModel.targetMonth)
-            }
-            .confirmationDialog(
-                "この予定を削除します。",
-                isPresented: deletingPlanBinding,
-                titleVisibility: .visible
-            ) {
-                Button("削除する", role: .destructive) {
-                    deleteSelectedPlan()
-                }
-                Button("キャンセル", role: .cancel) {
-                    viewModel.deletingPlan = nil
-                }
-            }
-            .onAppear {
-                reloadSections()
-            }
-            .onChange(of: planReloadToken) { _, _ in
-                reloadSections()
-            }
-            .onChange(of: settings.first?.initialBalance) { _, _ in
-                reloadSections()
-            }
-            .onChange(of: settings.first?.warningBalanceThreshold) { _, _ in
-                reloadSections()
-            }
-            .onChange(of: viewModel.targetMonth) { _, _ in
-                reloadSections()
-            }
-            .onChange(of: viewModel.searchText) { _, _ in
-                reloadSections()
+            ScrollViewReader { proxy in
+                planListContent(using: proxy)
             }
         }
     }
@@ -161,6 +68,155 @@ struct PlanListView: View {
             viewModel.deletingPlan = nil
         } catch {
             viewModel.deletingPlan = nil
+        }
+    }
+
+    /// 予定一覧画面の主要コンテンツを構築する。
+    @ViewBuilder
+    private func planListContent(using proxy: ScrollViewProxy) -> some View {
+        List {
+            sectionList
+            emptyStateView
+        }
+        .navigationTitle("予定")
+        .toolbar {
+            planListToolbar
+        }
+        .searchable(text: $viewModel.searchText, prompt: "名称で検索")
+        .sheet(isPresented: $viewModel.isShowingEditor) {
+            PlanEditorView(
+                plan: viewModel.editingPlan,
+                recurringPlans: recurringPlans
+            )
+        }
+        .sheet(isPresented: $isShowingMonthlySummary) {
+            MonthlySummaryView(initialMonth: viewModel.targetMonth)
+        }
+        .confirmationDialog(
+            "この予定を削除します。",
+            isPresented: deletingPlanBinding,
+            titleVisibility: .visible
+        ) {
+            Button("削除する", role: .destructive) {
+                deleteSelectedPlan()
+            }
+            Button("キャンセル", role: .cancel) {
+                viewModel.deletingPlan = nil
+            }
+        }
+        .onAppear {
+            reloadSections()
+        }
+        .onChange(of: planReloadToken) { _, _ in
+            reloadSections()
+        }
+        .onChange(of: settings.first?.initialBalance) { _, _ in
+            reloadSections()
+        }
+        .onChange(of: settings.first?.warningBalanceThreshold) { _, _ in
+            reloadSections()
+        }
+        .onChange(of: viewModel.targetMonth) { _, _ in
+            reloadSections()
+        }
+        .onChange(of: viewModel.searchText) { _, _ in
+            reloadSections()
+        }
+        .onChange(of: navigationState.planListFocusRequest?.id) { _, _ in
+            handleFocusRequest(using: proxy)
+        }
+        .task {
+            handleFocusRequest(using: proxy)
+        }
+    }
+
+    /// 日付セクション付きの予定一覧を返す。
+    @ViewBuilder
+    private var sectionList: some View {
+        ForEach(viewModel.sections) { section in
+            Section {
+                ForEach(section.rows) { row in
+                    rowButton(for: row)
+                }
+            } header: {
+                PlanListSectionHeaderView(section: section)
+                    .id(section.date)
+            }
+        }
+    }
+
+    /// 空状態表示を返す。
+    @ViewBuilder
+    private var emptyStateView: some View {
+        if viewModel.sections.isEmpty {
+            ContentUnavailableView(
+                "予定がありません",
+                systemImage: "list.bullet.rectangle",
+                description: Text("対象月に表示できる予定がありません。")
+            )
+        }
+    }
+
+    /// 一覧画面のツールバー構成を返す。
+    @ToolbarContentBuilder
+    private var planListToolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            MonthSwitcherView(
+                targetMonth: viewModel.targetMonth,
+                onPrevious: viewModel.showPreviousMonth,
+                onNext: viewModel.showNextMonth
+            )
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                isShowingMonthlySummary = true
+            } label: {
+                Image(systemName: "calendar")
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                viewModel.presentCreate()
+            } label: {
+                Image(systemName: "plus")
+            }
+        }
+    }
+
+    /// 予定行ボタンを返す。
+    @ViewBuilder
+    private func rowButton(for row: PlanListRowModel) -> some View {
+        Button {
+            if let plan = plans.first(where: { $0.id == row.planID }) {
+                viewModel.presentEdit(for: plan)
+            }
+        } label: {
+            PlanListRowView(row: row)
+        }
+        .buttonStyle(.plain)
+        .swipeActions {
+            Button("削除", role: .destructive) {
+                if let plan = plans.first(where: { $0.id == row.planID }) {
+                    viewModel.deletingPlan = plan
+                }
+            }
+        }
+    }
+
+    /// 外部画面から受けた対象日へ移動し、対応セクションへスクロールする。
+    private func handleFocusRequest(using proxy: ScrollViewProxy) {
+        guard let request = navigationState.planListFocusRequest else {
+            return
+        }
+
+        viewModel.focus(on: request.date)
+        reloadSections()
+
+        DispatchQueue.main.async {
+            withAnimation {
+                proxy.scrollTo(request.date, anchor: .top)
+            }
+            navigationState.consumePlanListFocusRequest()
         }
     }
 }
@@ -248,4 +304,5 @@ private struct MonthSwitcherView: View {
 
 #Preview {
     PlanListView()
+        .environment(AppNavigationState())
 }

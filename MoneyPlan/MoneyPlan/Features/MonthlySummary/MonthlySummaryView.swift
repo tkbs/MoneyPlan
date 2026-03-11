@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct MonthlySummaryView: View {
+    @Environment(AppNavigationState.self) private var navigationState
+    @Environment(\.dismiss) private var dismiss
     @Query(
         sort: [
             SortDescriptor(\TransactionPlan.date, order: .forward),
@@ -28,7 +30,12 @@ struct MonthlySummaryView: View {
 
                 Section("日別集計") {
                     ForEach(viewModel.summary.dailySummaries) { row in
-                        MonthlySummaryRowView(row: row)
+                        Button {
+                            openPlanList(for: row.date)
+                        } label: {
+                            MonthlySummaryRowView(row: row)
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     if viewModel.summary.dailySummaries.isEmpty {
@@ -80,6 +87,12 @@ struct MonthlySummaryView: View {
             initialBalance: settings.first?.initialBalance ?? 0,
             warningThreshold: settings.first?.warningBalanceThreshold ?? 0
         )
+    }
+
+    /// 対象日を予定一覧へ引き継いでサマリーを閉じる。
+    private func openPlanList(for date: Date) {
+        navigationState.openPlanList(on: date)
+        dismiss()
     }
 }
 
@@ -195,4 +208,5 @@ private struct MonthlySummaryMonthSwitcherView: View {
 
 #Preview {
     MonthlySummaryView()
+        .environment(AppNavigationState())
 }

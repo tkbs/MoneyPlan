@@ -2,31 +2,37 @@ import SwiftUI
 
 struct RootTabView: View {
     @Environment(\.modelContext) private var modelContext
+    @State private var navigationState = AppNavigationState()
     @State private var bootstrapErrorMessage: String?
     @State private var didBootstrap = false
 
     var body: some View {
-        TabView {
+        TabView(selection: $navigationState.selectedTab) {
             DashboardView()
+                .tag(AppTab.dashboard)
                 .tabItem {
                     Label("ホーム", systemImage: "house")
                 }
 
             PlanListView()
+                .tag(AppTab.planList)
                 .tabItem {
                     Label("予定", systemImage: "list.bullet")
                 }
 
             RecurringPlanListView()
+                .tag(AppTab.recurringPlanList)
                 .tabItem {
                     Label("定期", systemImage: "repeat")
                 }
 
             SettingsView()
+                .tag(AppTab.settings)
                 .tabItem {
                     Label("設定", systemImage: "gearshape")
                 }
         }
+        .environment(navigationState)
         .task {
             try? bootstrapIfNeeded()
         }

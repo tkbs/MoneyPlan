@@ -39,6 +39,12 @@ final class PlanListViewModel {
         isShowingEditor = true
     }
 
+    /// 指定日を表示できる月へ移動し、絞り込みを解除する。
+    func focus(on date: Date) {
+        targetMonth = calendar.startOfMonth(for: date)
+        searchText = ""
+    }
+
     /// 予定一覧を表示用セクションへ変換する。
     func reload(
         plans: [TransactionPlan],
