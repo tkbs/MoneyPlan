@@ -27,10 +27,12 @@ struct RecurringPlanListView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("recurring-plan-row-\(row.name)")
 
                         Toggle("", isOn: isActiveBinding(for: row.planID))
                             .labelsHidden()
                             .accessibilityLabel("\(row.name)の有効状態")
+                            .accessibilityIdentifier("recurring-plan-toggle-\(row.name)")
                     }
                     .swipeActions {
                         Button("削除", role: .destructive) {
@@ -55,6 +57,7 @@ struct RecurringPlanListView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier("recurring-plan-list-add-button")
                 }
             }
             .sheet(isPresented: $viewModel.isShowingEditor) {

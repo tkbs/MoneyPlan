@@ -8,34 +8,215 @@
 import XCTest
 
 final class MoneyPlanUITests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
-        continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+    private enum Scenario: String {
+        case empty
+        case existingPlan
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    override func setUpWithError() throws {
+        continueAfterFailure = false
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
+    func testAddPlanDisplaysInList() throws {
+        let app = launchApp(scenario: .empty)
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        openPlanList(in: app)
+        app.buttons["plan-list-add-button"].tap()
+
+        let nameField = app.textFields["名称"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 2))
+        nameField.tap()
+        nameField.typeText("UI追加予定")
+
+        let amountField = app.textFields["金額"]
+        amountField.tap()
+        amountField.typeText("12000")
+
+        app.buttons["保存"].tap()
+
+        XCTAssertTrue(app.buttons["plan-row-UI追加予定"].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testEditAndDeletePlan() throws {
+        let app = launchApp(scenario: .existingPlan)
+
+        openDashboard(in: app)
+
+        let existingRow = app.buttons["dashboard-upcoming-plan-row-UI既存予定"]
+        XCTAssertTrue(existingRow.waitForExistence(timeout: 2))
+        XCTAssertTrue(waitForHittable(existingRow, timeout: 5))
+        existingRow.tap()
+
+        let editorTitle = app.navigationBars["予定を編集"]
+        XCTAssertTrue(editorTitle.waitForExistence(timeout: 5))
+
+        let nameField = app.textFields["名称"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        replaceText(in: nameField, with: "UI更新予定")
+
+        let amountField = app.textFields["金額"]
+        replaceText(in: amountField, with: "45000")
+
+        app.buttons["保存"].tap()
+
+        let updatedRow = app.buttons["dashboard-upcoming-plan-row-UI更新予定"]
+        XCTAssertTrue(updatedRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForNonExistence(app.buttons["dashboard-upcoming-plan-row-UI既存予定"], timeout: 5))
+
+        updatedRow.tap()
+        app.buttons["削除"].tap()
+        app.buttons["削除する"].tap()
+
+        XCTAssertTrue(waitForNonExistence(updatedRow, timeout: 5))
+    }
+
+    @MainActor
+    func testRecurringPlanCanBeStoppedAndGeneratedPlanDisappears() throws {
+        let app = launchApp(scenario: .empty)
+
+        openRecurringPlanList(in: app)
+        app.buttons["recurring-plan-list-add-button"].tap()
+
+        let nameField = app.textFields["名称"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 2))
+        nameField.tap()
+        nameField.typeText("UI定期家賃")
+
+        let amountField = app.textFields["金額"]
+        amountField.tap()
+        amountField.typeText("50000")
+
+        app.buttons["保存"].tap()
+        XCTAssertTrue(app.buttons["recurring-plan-row-UI定期家賃"].waitForExistence(timeout: 2))
+
+        openPlanList(in: app)
+        app.buttons["plan-list-next-month-button"].tap()
+
+        let generatedRow = app.buttons["plan-row-UI定期家賃"]
+        XCTAssertTrue(generatedRow.waitForExistence(timeout: 2))
+
+        openRecurringPlanList(in: app)
+        app.switches["recurring-plan-toggle-UI定期家賃"].tap()
+
+        openPlanList(in: app)
+        XCTAssertTrue(waitForNonExistence(generatedRow, timeout: 2))
+    }
+
+    @MainActor
+    func testSettingsUpdateReflectsOnDashboard() throws {
+        let app = launchApp(scenario: .empty)
+
+        openDashboard(in: app)
+        let currentBalance = app.staticTexts["dashboard-current-balance-value"]
+        XCTAssertTrue(currentBalance.waitForExistence(timeout: 2))
+        XCTAssertTrue(waitForLabel("¥100,000", on: currentBalance, timeout: 2))
+
+        openSettings(in: app)
+
+        let initialBalanceField = app.textFields["初期残高"]
+        XCTAssertTrue(initialBalanceField.waitForExistence(timeout: 2))
+        replaceText(in: initialBalanceField, with: "120000")
+        app.buttons["保存"].tap()
+
+        dismissKeyboardIfVisible(in: app)
+        XCTAssertTrue(waitForLabel("¥120,000", on: currentBalance, timeout: 5))
     }
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+            let app = XCUIApplication()
+            app.launchArguments += ["-ui-testing"]
+            app.launchEnvironment["MONEYPLAN_UI_TEST_SCENARIO"] = Scenario.empty.rawValue
+            app.launch()
         }
+    }
+
+    /// 指定シナリオでアプリを起動し、タブバー表示まで待つ。
+    @MainActor
+    private func launchApp(scenario: Scenario) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += ["-ui-testing"]
+        app.launchEnvironment["MONEYPLAN_UI_TEST_SCENARIO"] = scenario.rawValue
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["ホーム"].waitForExistence(timeout: 2))
+        return app
+    }
+
+    /// 予定タブを開き、追加ボタンが操作可能になるまで待機する。
+    @MainActor
+    private func openPlanList(in app: XCUIApplication) {
+        app.tabBars.buttons["予定"].tap()
+        XCTAssertTrue(waitForHittable(app.buttons["plan-list-add-button"], timeout: 5))
+    }
+
+    /// 定期タブを開き、追加ボタンが操作可能になるまで待機する。
+    @MainActor
+    private func openRecurringPlanList(in app: XCUIApplication) {
+        app.tabBars.buttons["定期"].tap()
+        XCTAssertTrue(waitForHittable(app.buttons["recurring-plan-list-add-button"], timeout: 5))
+    }
+
+    /// 設定タブを開き、初期残高入力欄が操作可能になるまで待機する。
+    @MainActor
+    private func openSettings(in app: XCUIApplication) {
+        app.tabBars.buttons["設定"].tap()
+        XCTAssertTrue(waitForHittable(app.textFields["初期残高"], timeout: 5))
+    }
+
+    /// ホームタブを開き、現在残高表示が見えるまで待機する。
+    @MainActor
+    private func openDashboard(in app: XCUIApplication) {
+        app.tabBars.buttons["ホーム"].tap()
+        XCTAssertTrue(app.staticTexts["dashboard-current-balance-value"].waitForExistence(timeout: 5))
+    }
+
+    /// 表示中のキーボードがあれば画面上部タップで閉じる。
+    @MainActor
+    private func dismissKeyboardIfVisible(in app: XCUIApplication) {
+        guard app.keyboards.element.exists else {
+            return
+        }
+
+        app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)).tap()
+    }
+
+    /// 既存文字列を消してから新しい文字列へ置き換える。
+    @MainActor
+    private func replaceText(in element: XCUIElement, with newValue: String) {
+        element.tap()
+
+        if let currentValue = element.value as? String, currentValue.isEmpty == false {
+            let deleteText = String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count)
+            element.typeText(deleteText)
+        }
+
+        element.typeText(newValue)
+    }
+
+    /// 要素が非表示になるまで待機する。
+    @MainActor
+    private func waitForNonExistence(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    /// 要素がタップ可能になるまで待機する。
+    @MainActor
+    private func waitForHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "exists == true AND hittable == true")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    /// 要素ラベルが期待値へ更新されるまで待機する。
+    @MainActor
+    private func waitForLabel(_ label: String, on element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "label == %@", label)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 }

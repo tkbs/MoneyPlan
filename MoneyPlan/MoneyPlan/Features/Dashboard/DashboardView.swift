@@ -115,6 +115,7 @@ private struct DashboardBalanceCardView: View {
 
             Text(CurrencyFormatter.string(from: summary.currentBalance))
                 .font(.system(size: 34, weight: .bold, design: .rounded))
+                .accessibilityIdentifier("dashboard-current-balance-value")
 
             HStack(spacing: 12) {
                 DashboardMetricChipView(
@@ -328,6 +329,7 @@ private struct DashboardUpcomingPlansSectionView: View {
                         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("dashboard-upcoming-plan-row-\(row.name)")
                 }
             }
         }

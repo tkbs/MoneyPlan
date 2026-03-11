@@ -16,7 +16,10 @@ struct MoneyPlanApp: App {
             RecurringPlan.self,
             AppSetting.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: ProcessInfo.processInfo.arguments.contains("-ui-testing")
+        )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

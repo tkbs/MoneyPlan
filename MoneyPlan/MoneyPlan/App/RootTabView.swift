@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct RootTabView: View {
     @Environment(\.modelContext) private var modelContext
@@ -46,12 +47,17 @@ struct RootTabView: View {
     }
 
     /// 初回表示時の設定生成と定期予定展開を行う。
+    @MainActor
     private func bootstrapIfNeeded() throws {
         guard didBootstrap == false else {
             return
         }
 
         do {
+            if MoneyPlanUITestSupport.isEnabled {
+                try MoneyPlanUITestSupport.prepareData(in: modelContext)
+            }
+
             let settingRepository = SettingRepository(modelContext: modelContext)
             let recurringPlanSyncCoordinator = RecurringPlanSyncCoordinator()
 
@@ -75,5 +81,68 @@ struct RootTabView: View {
                 }
             }
         )
+    }
+}
+
+private enum MoneyPlanUITestSupport {
+    /// UI テスト専用起動かを判定する。
+    static var isEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("-ui-testing")
+    }
+
+    /// テストごとの初期データ種別を返す。
+    static var scenario: Scenario {
+        Scenario(
+            rawValue: ProcessInfo.processInfo.environment["MONEYPLAN_UI_TEST_SCENARIO"] ?? ""
+        ) ?? .empty
+    }
+
+    /// テスト開始前に永続データをクリアし、シナリオ初期値を投入する。
+    @MainActor
+    static func prepareData(in modelContext: ModelContext, calendar: Calendar = .current) throws {
+        try deleteAll(TransactionPlan.self, in: modelContext)
+        try deleteAll(RecurringPlan.self, in: modelContext)
+        try deleteAll(AppSetting.self, in: modelContext)
+
+        modelContext.insert(
+            AppSetting(
+                initialBalance: 100_000,
+                warningBalanceThreshold: 30_000
+            )
+        )
+
+        switch scenario {
+        case .empty:
+            break
+        case .existingPlan:
+            modelContext.insert(
+                TransactionPlan(
+                    date: calendar.startOfDay(
+                        for: calendar.date(byAdding: .day, value: 1, to: .now) ?? .now
+                    ),
+                    flowType: .expense,
+                    name: "UI既存予定",
+                    amount: 40_000,
+                    memo: "編集削除確認用",
+                    sortOrder: 0
+                )
+            )
+        }
+
+        try modelContext.save()
+    }
+
+    /// 指定モデルを全削除する。
+    @MainActor
+    private static func deleteAll<T: PersistentModel>(_ modelType: T.Type, in modelContext: ModelContext) throws {
+        let descriptor = FetchDescriptor<T>()
+        for model in try modelContext.fetch(descriptor) {
+            modelContext.delete(model)
+        }
+    }
+
+    enum Scenario: String {
+        case empty
+        case existingPlan
     }
 }

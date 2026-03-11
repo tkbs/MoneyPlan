@@ -173,6 +173,7 @@ struct PlanListView: View {
             } label: {
                 Image(systemName: "calendar")
             }
+            .accessibilityIdentifier("plan-list-monthly-summary-button")
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button {
@@ -180,6 +181,7 @@ struct PlanListView: View {
             } label: {
                 Image(systemName: "plus")
             }
+            .accessibilityIdentifier("plan-list-add-button")
         }
     }
 
@@ -194,6 +196,7 @@ struct PlanListView: View {
             PlanListRowView(row: row)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("plan-row-\(row.name)")
         .swipeActions {
             Button("削除", role: .destructive) {
                 if let plan = plans.first(where: { $0.id == row.planID }) {
@@ -292,12 +295,14 @@ private struct MonthSwitcherView: View {
             Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
             }
+            .accessibilityIdentifier("plan-list-previous-month-button")
             Text(targetMonth, format: Date.FormatStyle().year().month(.wide))
                 .font(.headline)
                 .frame(minWidth: 120)
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
             }
+            .accessibilityIdentifier("plan-list-next-month-button")
         }
     }
 }
