@@ -8,6 +8,9 @@
 import XCTest
 
 final class MoneyPlanUITestsLaunchTests: XCTestCase {
+    private enum Scenario: String {
+        case empty
+    }
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
@@ -19,15 +22,22 @@ final class MoneyPlanUITestsLaunchTests: XCTestCase {
 
     @MainActor
     func testLaunch() throws {
-        let app = XCUIApplication()
+        let app = makeLaunchTestApp()
         app.launch()
-
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
+        XCTAssertTrue(app.tabBars.buttons["ホーム"].waitForExistence(timeout: 5))
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen"
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    /// 起動テスト用の初期化済みアプリを返す。
+    @MainActor
+    private func makeLaunchTestApp() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += ["-ui-testing"]
+        app.launchEnvironment["MONEYPLAN_UI_TEST_SCENARIO"] = Scenario.empty.rawValue
+        return app
     }
 }
