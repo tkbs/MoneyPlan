@@ -19,6 +19,7 @@ struct PlanListView: View {
         ]
     ) private var recurringPlans: [RecurringPlan]
     @State private var viewModel = PlanListViewModel()
+    @State private var isShowingMonthlySummary = false
 
     var body: some View {
         NavigationStack {
@@ -64,6 +65,13 @@ struct PlanListView: View {
                         onNext: viewModel.showNextMonth
                     )
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        isShowingMonthlySummary = true
+                    } label: {
+                        Image(systemName: "calendar")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         viewModel.presentCreate()
@@ -78,6 +86,9 @@ struct PlanListView: View {
                     plan: viewModel.editingPlan,
                     recurringPlans: recurringPlans
                 )
+            }
+            .sheet(isPresented: $isShowingMonthlySummary) {
+                MonthlySummaryView(initialMonth: viewModel.targetMonth)
             }
             .confirmationDialog(
                 "この予定を削除します。",

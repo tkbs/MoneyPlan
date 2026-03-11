@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum BalanceWarningState {
+enum BalanceWarningState: Equatable {
     case none
     case warning
     case negative
