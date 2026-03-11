@@ -365,7 +365,6 @@ private struct DashboardGraphSectionView: View {
                         y: .value("残高", point.balance)
                     )
                     .foregroundStyle(.blue)
-                    .interpolationMethod(.catmullRom)
 
                     PointMark(
                         x: .value("日付", point.date),
