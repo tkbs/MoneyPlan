@@ -47,19 +47,11 @@ struct RootTabView: View {
 
         do {
             let settingRepository = SettingRepository(modelContext: modelContext)
-            let recurringPlanRepository = RecurringPlanRepository(modelContext: modelContext)
-            let generator = RecurringPlanGenerator()
+            let recurringPlanSyncCoordinator = RecurringPlanSyncCoordinator()
 
             _ = try settingRepository.fetchOrCreate()
             try settingRepository.normalizeIfNeeded()
-
-            let activePlans = try recurringPlanRepository.fetchActivePlans()
-            try generator.syncFuturePlans(
-                templates: activePlans,
-                in: modelContext,
-                generationStartMonth: .now,
-                generationMonthCount: MoneyPlanConstants.recurringGenerationMonthCount
-            )
+            try recurringPlanSyncCoordinator.sync(in: modelContext)
 
             didBootstrap = true
         } catch {

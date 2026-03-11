@@ -51,7 +51,11 @@ struct RecurringPlanRepository {
 
     /// 編集入力から定期予定を保存する。
     @discardableResult
-    func save(input: RecurringPlanEditorInput, original: RecurringPlan? = nil) throws -> RecurringPlan {
+    func save(
+        input: RecurringPlanEditorInput,
+        original: RecurringPlan? = nil,
+        persistChanges: Bool = true
+    ) throws -> RecurringPlan {
         let plan = original ?? RecurringPlan(
             flowType: input.flowType,
             name: input.name.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -77,13 +81,17 @@ struct RecurringPlanRepository {
         plan.note = input.note.trimmingCharacters(in: .whitespacesAndNewlines)
         plan.updatedAt = .now
 
-        try modelContext.save()
+        if persistChanges {
+            try modelContext.save()
+        }
         return plan
     }
 
     /// 指定定期予定を削除する。
-    func delete(_ plan: RecurringPlan) throws {
+    func delete(_ plan: RecurringPlan, persistChanges: Bool = true) throws {
         modelContext.delete(plan)
-        try modelContext.save()
+        if persistChanges {
+            try modelContext.save()
+        }
     }
 }
