@@ -1,6 +1,9 @@
 import Foundation
 
 enum MoneyPlanConstants {
+    /// アプリ内の日付・数値表記に使う日本語ロケール。
+    static let appLocale = Locale(identifier: "ja_JP")
+
     /// 定期予定を自動生成する月数。
     static let recurringGenerationMonthCount = 12
 

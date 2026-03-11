@@ -31,6 +31,7 @@ struct MoneyPlanApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.locale, MoneyPlanConstants.appLocale)
         }
         .modelContainer(sharedModelContainer)
     }

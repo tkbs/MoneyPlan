@@ -179,19 +179,24 @@ struct DashboardSummaryBuilder {
             return "現在の残高が警告閾値以下です。"
         }
         if let firstNegativeEntry = futureEntries.first(where: { $0.runningBalance < 0 }) {
-            return "\(formatted(date: firstNegativeEntry.date)) に残高不足の見込みです。"
+            return "\(formatted(date: firstNegativeEntry.date))に残高不足の見込みです。"
         }
         if let firstWarningEntry = futureEntries.first(where: { $0.runningBalance <= warningThreshold }) {
             if calendar.startOfDay(for: firstWarningEntry.date) == referenceDay {
                 return "本日の残高が警告閾値以下です。"
             }
-            return "\(formatted(date: firstWarningEntry.date)) に警告閾値以下になる見込みです。"
+            return "\(formatted(date: firstWarningEntry.date))に警告閾値以下になる見込みです。"
         }
         return "警告はありません。"
     }
 
     /// 警告文向けの日付文字列を返す。
     private func formatted(date: Date) -> String {
-        date.formatted(.dateTime.month().day())
+        date.formatted(
+            .dateTime
+                .locale(MoneyPlanConstants.appLocale)
+                .month()
+                .day()
+        )
     }
 }

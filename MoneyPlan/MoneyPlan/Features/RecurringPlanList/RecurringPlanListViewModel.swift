@@ -55,6 +55,7 @@ final class RecurringPlanListViewModel {
 
         let formattedDate = nextOccurrence.formatted(
             Date.FormatStyle(date: .abbreviated, time: .omitted)
+                .locale(MoneyPlanConstants.appLocale)
         )
         return "次回 \(formattedDate)"
     }

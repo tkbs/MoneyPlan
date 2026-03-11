@@ -53,6 +53,24 @@ struct DashboardSummaryBuilderTests {
         #expect(summary.warningMessage == "警告はありません。")
     }
 
+    /// 将来警告の日付を日本語表記で返す。
+    @Test func formatsWarningDateInJapanese() {
+        let referenceDate = makeDate(month: 3, day: 15)
+        let plans = [
+            makePlan(month: 3, day: 20, flowType: .expense, amount: 55_000, name: "カード"),
+        ]
+
+        let summary = DashboardSummaryBuilder(calendar: calendar).build(
+            plans: plans,
+            initialBalance: 60_000,
+            warningThreshold: 10_000,
+            graphRange: .oneMonth,
+            referenceDate: referenceDate
+        )
+
+        #expect(summary.warningMessage == "3月20日に警告閾値以下になる見込みです。")
+    }
+
     /// テスト用の予定を作る。
     private func makePlan(
         month: Int,

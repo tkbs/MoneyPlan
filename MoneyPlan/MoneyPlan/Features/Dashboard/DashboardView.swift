@@ -253,7 +253,12 @@ private struct DashboardGraphSectionView: View {
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.month().day())
+                    AxisValueLabel(
+                        format: .dateTime
+                            .locale(MoneyPlanConstants.appLocale)
+                            .month()
+                            .day()
+                    )
                 }
             }
             .chartYAxis {
