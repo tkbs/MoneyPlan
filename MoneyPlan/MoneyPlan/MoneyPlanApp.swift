@@ -12,7 +12,9 @@ import SwiftData
 struct MoneyPlanApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            TransactionPlan.self,
+            RecurringPlan.self,
+            AppSetting.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
