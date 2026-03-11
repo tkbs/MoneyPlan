@@ -4,16 +4,21 @@ import SwiftData
 @Model
 final class RecurringPlan {
     @Attribute(.unique) var id: UUID
-    var flowType: FlowType
+    var flowTypeRawValue: String
     var name: String
     var amount: Int
     var dayOfMonth: Int
     var startMonth: Date
     var endMonth: Date?
     var isActive: Bool
-    var note: String?
+    var note: String
     var createdAt: Date
     var updatedAt: Date
+
+    var flowType: FlowType {
+        get { FlowType(rawValue: flowTypeRawValue) ?? .expense }
+        set { flowTypeRawValue = newValue.rawValue }
+    }
 
     var signedAmount: Int {
         amount * flowType.signedMultiplier
@@ -28,12 +33,12 @@ final class RecurringPlan {
         startMonth: Date,
         endMonth: Date? = nil,
         isActive: Bool = true,
-        note: String? = nil,
+        note: String = "",
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
         self.id = id
-        self.flowType = flowType
+        self.flowTypeRawValue = flowType.rawValue
         self.name = name
         self.amount = amount
         self.dayOfMonth = dayOfMonth
