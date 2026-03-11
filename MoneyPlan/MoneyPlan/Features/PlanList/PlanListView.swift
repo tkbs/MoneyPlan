@@ -78,7 +78,7 @@ struct PlanListView: View {
             sectionList
             emptyStateView
         }
-        .navigationTitle("予定")
+        .navigationTitle("予定一覧")
         .toolbar {
             planListToolbar
         }
@@ -125,8 +125,12 @@ struct PlanListView: View {
         .onChange(of: navigationState.planListFocusRequest?.id) { _, _ in
             handleFocusRequest(using: proxy)
         }
+        .onChange(of: navigationState.planListCreateRequestID) { _, _ in
+            handleCreateRequest()
+        }
         .task {
             handleFocusRequest(using: proxy)
+            handleCreateRequest()
         }
     }
 
@@ -152,7 +156,7 @@ struct PlanListView: View {
             ContentUnavailableView(
                 "予定がありません",
                 systemImage: "list.bullet.rectangle",
-                description: Text("対象月に表示できる予定がありません。")
+                description: Text("右上の＋から単発予定を追加できます。毎月発生する予定は定期予定タブで登録すると自動反映されます。")
             )
         }
     }
@@ -221,6 +225,16 @@ struct PlanListView: View {
             }
             navigationState.consumePlanListFocusRequest()
         }
+    }
+
+    /// 他画面から受けた新規作成要求を処理する。
+    private func handleCreateRequest() {
+        guard navigationState.planListCreateRequestID != nil else {
+            return
+        }
+
+        viewModel.presentCreate()
+        navigationState.consumePlanListCreateRequest()
     }
 }
 

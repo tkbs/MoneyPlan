@@ -3,6 +3,7 @@ import SwiftData
 import Charts
 
 struct DashboardView: View {
+    @Environment(AppNavigationState.self) private var navigationState
     @Query(
         sort: [
             SortDescriptor(\TransactionPlan.date, order: .forward),
@@ -24,6 +25,14 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    if shouldShowGettingStarted {
+                        DashboardGettingStartedCardView(
+                            onOpenSettings: openSettings,
+                            onCreateRecurringPlan: createRecurringPlan,
+                            onCreatePlan: createPlan
+                        )
+                    }
+
                     DashboardBalanceCardView(summary: viewModel.summary)
                     DashboardWarningCardView(summary: viewModel.summary)
                     DashboardGraphSectionView(
@@ -54,6 +63,20 @@ struct DashboardView: View {
                 .padding()
             }
             .navigationTitle("ホーム")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("単発予定を追加", systemImage: "plus.circle") {
+                            createPlan()
+                        }
+                        Button("定期予定を登録", systemImage: "repeat.circle") {
+                            createRecurringPlan()
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
             .sheet(isPresented: $viewModel.isShowingEditor) {
                 PlanEditorView(
                     plan: viewModel.editingPlan,
@@ -86,6 +109,11 @@ struct DashboardView: View {
         plans.map(\.updatedAt)
     }
 
+    /// 初回導線カードを表示すべきかを返す。
+    private var shouldShowGettingStarted: Bool {
+        plans.isEmpty && recurringPlans.isEmpty
+    }
+
     /// 現在データからダッシュボードサマリーを再構築する。
     private func reloadSummary() {
         viewModel.reload(
@@ -101,6 +129,21 @@ struct DashboardView: View {
             return
         }
         viewModel.presentEdit(for: plan)
+    }
+
+    /// 単発予定の新規作成を開始する。
+    private func createPlan() {
+        viewModel.presentCreate()
+    }
+
+    /// 定期予定の新規作成画面へ誘導する。
+    private func createRecurringPlan() {
+        navigationState.openRecurringPlanListForCreation()
+    }
+
+    /// 設定タブへ移動する。
+    private func openSettings() {
+        navigationState.selectedTab = .settings
     }
 }
 
@@ -145,6 +188,88 @@ private struct DashboardBalanceCardView: View {
             ),
             in: RoundedRectangle(cornerRadius: 24)
         )
+    }
+}
+
+private struct DashboardGettingStartedCardView: View {
+    let onOpenSettings: () -> Void
+    let onCreateRecurringPlan: () -> Void
+    let onCreatePlan: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("最初にやること")
+                .font(.headline)
+
+            Text("このアプリは、残高の基準を入れてから毎月の固定費と単発の予定を足していくと使いやすくなります。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            DashboardGettingStartedStepView(
+                number: 1,
+                title: "設定で初期残高を入れる",
+                message: "残高計算の出発点になります。",
+                actionTitle: "設定を開く",
+                action: onOpenSettings
+            )
+            DashboardGettingStartedStepView(
+                number: 2,
+                title: "定期予定で毎月の固定費を登録する",
+                message: "家賃やサブスクは自動で将来予定に反映されます。",
+                actionTitle: "定期予定を登録",
+                action: onCreateRecurringPlan
+            )
+            DashboardGettingStartedStepView(
+                number: 3,
+                title: "単発の入出金を追加する",
+                message: "臨時出費や一時的な入金を追加して残高見込みを整えます。",
+                actionTitle: "予定を追加",
+                action: onCreatePlan
+            )
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [Color.orange.opacity(0.16), Color.yellow.opacity(0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 24)
+        )
+    }
+}
+
+private struct DashboardGettingStartedStepView: View {
+    let number: Int
+    let title: String
+    let message: String
+    let actionTitle: String
+    let action: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(number)")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.orange)
+                .frame(width: 28, height: 28)
+                .background(Color.white.opacity(0.85), in: Circle())
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button(actionTitle, action: action)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 18))
     }
 }
 

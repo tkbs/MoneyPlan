@@ -18,13 +18,13 @@ struct RootTabView: View {
             PlanListView()
                 .tag(AppTab.planList)
                 .tabItem {
-                    Label("予定", systemImage: "list.bullet")
+                    Label("予定一覧", systemImage: "list.bullet")
                 }
 
             RecurringPlanListView()
                 .tag(AppTab.recurringPlanList)
                 .tabItem {
-                    Label("定期", systemImage: "repeat")
+                    Label("定期予定", systemImage: "repeat")
                 }
 
             SettingsView()

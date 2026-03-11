@@ -42,6 +42,12 @@ final class DashboardViewModel {
         isShowingEditor = true
     }
 
+    /// 新規予定作成シートを開く。
+    func presentCreate() {
+        editingPlan = nil
+        isShowingEditor = true
+    }
+
     /// 月次サマリーを対象月で開く。
     func presentMonthlySummary(for month: Date) {
         selectedMonth = calendar.startOfMonth(for: month)

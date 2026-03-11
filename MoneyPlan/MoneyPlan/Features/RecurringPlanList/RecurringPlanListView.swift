@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct RecurringPlanListView: View {
+    @Environment(AppNavigationState.self) private var navigationState
     @Environment(\.modelContext) private var modelContext
     @Query(
         sort: [
@@ -45,11 +46,11 @@ struct RecurringPlanListView: View {
                     ContentUnavailableView(
                         "定期予定がありません",
                         systemImage: "repeat",
-                        description: Text("追加ボタンから毎月の予定を登録できます。")
+                        description: Text("右上の＋から家賃やサブスクなど毎月の予定を登録できます。登録後は将来の予定へ自動反映されます。")
                     )
                 }
             }
-            .navigationTitle("定期")
+            .navigationTitle("定期予定")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -88,6 +89,12 @@ struct RecurringPlanListView: View {
             .onChange(of: reloadToken) { _, _ in
                 reloadPlans()
             }
+            .onChange(of: navigationState.recurringPlanListCreateRequestID) { _, _ in
+                handleCreateRequest()
+            }
+            .task {
+                handleCreateRequest()
+            }
         }
     }
 
@@ -123,6 +130,16 @@ struct RecurringPlanListView: View {
     /// 定期予定一覧を再構築する。
     private func reloadPlans() {
         viewModel.reload(plans: recurringPlans)
+    }
+
+    /// 他画面から受けた新規作成要求を処理する。
+    private func handleCreateRequest() {
+        guard navigationState.recurringPlanListCreateRequestID != nil else {
+            return
+        }
+
+        viewModel.presentCreate()
+        navigationState.consumeRecurringPlanListCreateRequest()
     }
 
     /// 指定定期予定の有効状態トグルを保存する。
