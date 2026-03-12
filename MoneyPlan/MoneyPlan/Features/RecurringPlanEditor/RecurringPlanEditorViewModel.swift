@@ -53,9 +53,9 @@ final class RecurringPlanEditorViewModel {
         validationMessage = nil
         fieldErrors = [:]
 
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedAmountText = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = name.moneyPlanTrimmed
+        let trimmedNote = note.moneyPlanTrimmed
+        let trimmedAmountText = amountText.moneyPlanTrimmed
         let amount = Int(trimmedAmountText)
         let normalizedStartMonth = calendar.startOfMonth(for: startMonth)
         let normalizedEndMonth = hasEndMonth ? calendar.startOfMonth(for: endMonth) : nil

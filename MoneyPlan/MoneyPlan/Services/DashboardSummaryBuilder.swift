@@ -42,12 +42,8 @@ struct DashboardSummaryBuilder {
 
         return DashboardSummary(
             currentBalance: currentBalance,
-            monthlyIncomeTotal: currentMonthPlans
-                .filter { $0.flowType == .income }
-                .reduce(0) { $0 + $1.amount },
-            monthlyExpenseTotal: currentMonthPlans
-                .filter { $0.flowType == .expense }
-                .reduce(0) { $0 + $1.amount },
+            monthlyIncomeTotal: currentMonthPlans.totalAmount(for: .income),
+            monthlyExpenseTotal: currentMonthPlans.totalAmount(for: .expense),
             lowestProjectedBalance: lowestProjectedBalance,
             warningState: warningState,
             warningMessage: makeWarningMessage(

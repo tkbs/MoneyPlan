@@ -56,29 +56,23 @@ struct RecurringPlanRepository {
         original: RecurringPlan? = nil,
         persistChanges: Bool = true
     ) throws -> RecurringPlan {
+        let normalizedInput = normalize(input)
         let plan = original ?? RecurringPlan(
-            flowType: input.flowType,
-            name: input.name.trimmingCharacters(in: .whitespacesAndNewlines),
-            amount: input.amount,
-            dayOfMonth: input.dayOfMonth,
-            startMonth: calendar.startOfMonth(for: input.startMonth),
-            endMonth: input.endMonth.map { calendar.startOfMonth(for: $0) },
-            isActive: input.isActive,
-            note: input.note.trimmingCharacters(in: .whitespacesAndNewlines)
+            flowType: normalizedInput.flowType,
+            name: normalizedInput.name,
+            amount: normalizedInput.amount,
+            dayOfMonth: normalizedInput.dayOfMonth,
+            startMonth: normalizedInput.startMonth,
+            endMonth: normalizedInput.endMonth,
+            isActive: normalizedInput.isActive,
+            note: normalizedInput.note
         )
 
         if original == nil {
             modelContext.insert(plan)
         }
 
-        plan.flowType = input.flowType
-        plan.name = input.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        plan.amount = input.amount
-        plan.dayOfMonth = input.dayOfMonth
-        plan.startMonth = calendar.startOfMonth(for: input.startMonth)
-        plan.endMonth = input.endMonth.map { calendar.startOfMonth(for: $0) }
-        plan.isActive = input.isActive
-        plan.note = input.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        apply(normalizedInput, to: plan)
         plan.updatedAt = .now
 
         if persistChanges {
@@ -94,4 +88,41 @@ struct RecurringPlanRepository {
             try modelContext.save()
         }
     }
+
+    /// 保存前の定期予定入力を月初・空白除去込みで正規化する。
+    private func normalize(_ input: RecurringPlanEditorInput) -> NormalizedRecurringPlanInput {
+        NormalizedRecurringPlanInput(
+            flowType: input.flowType,
+            name: input.name.moneyPlanTrimmed,
+            amount: input.amount,
+            dayOfMonth: input.dayOfMonth,
+            startMonth: calendar.startOfMonth(for: input.startMonth),
+            endMonth: input.endMonth.map { calendar.startOfMonth(for: $0) },
+            isActive: input.isActive,
+            note: input.note.moneyPlanTrimmed
+        )
+    }
+
+    /// 正規化済み入力を定期予定モデルへ反映する。
+    private func apply(_ input: NormalizedRecurringPlanInput, to plan: RecurringPlan) {
+        plan.flowType = input.flowType
+        plan.name = input.name
+        plan.amount = input.amount
+        plan.dayOfMonth = input.dayOfMonth
+        plan.startMonth = input.startMonth
+        plan.endMonth = input.endMonth
+        plan.isActive = input.isActive
+        plan.note = input.note
+    }
+}
+
+private struct NormalizedRecurringPlanInput {
+    let flowType: FlowType
+    let name: String
+    let amount: Int
+    let dayOfMonth: Int
+    let startMonth: Date
+    let endMonth: Date?
+    let isActive: Bool
+    let note: String
 }

@@ -87,25 +87,19 @@ final class PlanListViewModel {
                     flowType: plan.flowType
                 )
             }
-            let incomeTotal = plansForDate
-                .filter { $0.flowType == .income }
-                .reduce(0) { $0 + $1.amount }
-            let expenseTotal = plansForDate
-                .filter { $0.flowType == .expense }
-                .reduce(0) { $0 + $1.amount }
 
             return PlanListSection(
                 date: date,
                 rows: rows,
-                dailyIncomeTotal: incomeTotal,
-                dailyExpenseTotal: expenseTotal
+                dailyIncomeTotal: plansForDate.totalAmount(for: .income),
+                dailyExpenseTotal: plansForDate.totalAmount(for: .expense)
             )
         }
     }
 
     /// 名称の部分一致検索に一致するか判定する。
     private func matchesSearchText(_ name: String) -> Bool {
-        let trimmedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSearchText = searchText.moneyPlanTrimmed
         guard trimmedSearchText.isEmpty == false else {
             return true
         }

@@ -67,10 +67,10 @@ final class PlanEditorViewModel {
         validationMessage = nil
         fieldErrors = [:]
 
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedMemo = memo.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedAmountText = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedSortOrderText = sortOrderText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = name.moneyPlanTrimmed
+        let trimmedMemo = memo.moneyPlanTrimmed
+        let trimmedAmountText = amountText.moneyPlanTrimmed
+        let trimmedSortOrderText = sortOrderText.moneyPlanTrimmed
         let normalizedSortOrderText = trimmedSortOrderText.isEmpty ? "0" : trimmedSortOrderText
 
         if trimmedName.isEmpty {

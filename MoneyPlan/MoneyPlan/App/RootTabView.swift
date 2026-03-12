@@ -62,7 +62,6 @@ struct RootTabView: View {
             let recurringPlanSyncCoordinator = RecurringPlanSyncCoordinator()
 
             _ = try settingRepository.fetchOrCreate()
-            try settingRepository.normalizeIfNeeded()
             try recurringPlanSyncCoordinator.sync(in: modelContext)
 
             didBootstrap = true

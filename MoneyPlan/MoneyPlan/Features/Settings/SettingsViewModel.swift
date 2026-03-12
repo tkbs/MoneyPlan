@@ -37,8 +37,8 @@ final class SettingsViewModel {
         validationMessage = nil
         fieldErrors = [:]
 
-        let trimmedInitialBalanceText = initialBalanceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedWarningBalanceThresholdText = warningBalanceThresholdText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedInitialBalanceText = initialBalanceText.moneyPlanTrimmed
+        let trimmedWarningBalanceThresholdText = warningBalanceThresholdText.moneyPlanTrimmed
 
         let initialBalance = Int(trimmedInitialBalanceText)
         if initialBalance == nil {

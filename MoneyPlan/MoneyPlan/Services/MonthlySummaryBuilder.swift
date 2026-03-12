@@ -40,18 +40,12 @@ struct MonthlySummaryBuilder {
         }
         let dailySummaries = groupedPlans.keys.sorted().map { day in
             let plansForDay = groupedPlans[day] ?? []
-            let incomeTotal = plansForDay
-                .filter { $0.flowType == .income }
-                .reduce(0) { $0 + $1.amount }
-            let expenseTotal = plansForDay
-                .filter { $0.flowType == .expense }
-                .reduce(0) { $0 + $1.amount }
             let endingBalance = dailyEndingBalance[day] ?? startingBalance
 
             return DailySummaryRowModel(
                 date: day,
-                incomeTotal: incomeTotal,
-                expenseTotal: expenseTotal,
+                incomeTotal: plansForDay.totalAmount(for: .income),
+                expenseTotal: plansForDay.totalAmount(for: .expense),
                 planCount: plansForDay.count,
                 endingBalance: endingBalance,
                 warningState: .from(balance: endingBalance, warningThreshold: warningThreshold)
@@ -60,12 +54,8 @@ struct MonthlySummaryBuilder {
 
         return MonthlySummary(
             targetMonth: normalizedMonth,
-            incomeTotal: monthPlans
-                .filter { $0.flowType == .income }
-                .reduce(0) { $0 + $1.amount },
-            expenseTotal: monthPlans
-                .filter { $0.flowType == .expense }
-                .reduce(0) { $0 + $1.amount },
+            incomeTotal: monthPlans.totalAmount(for: .income),
+            expenseTotal: monthPlans.totalAmount(for: .expense),
             endingBalance: monthEntries.last?.runningBalance ?? startingBalance,
             lowestBalance: ([startingBalance] + monthEntries.map(\.runningBalance)).min() ?? startingBalance,
             dailySummaries: dailySummaries
